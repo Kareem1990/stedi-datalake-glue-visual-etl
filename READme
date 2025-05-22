@@ -1,0 +1,3 @@
+aws s3 cp customer.json s3://stedi-datalake-terraform/customer_landing/
+aws s3 cp accelerometer.json s3://stedi-datalake-terraform/accelerometer_landing/
+aws s3 cp step_trainer.json s3://stedi-datalake-terraform/step_trainer_landing/
