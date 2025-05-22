@@ -50,3 +50,29 @@ resource "aws_iam_role_policy_attachment" "glue_basic" {
 resource "aws_glue_catalog_database" "stedi_db" {
   name = "stedi_lake"
 }
+
+
+#########################################
+#         IAM Policy for voclabs Role   #
+#########################################
+
+resource "aws_glue_catalog_policy" "allow_voclabs_glue_access" {
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = "arn:aws:iam::446509598474:role/voclabs"
+        },
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:GetTable",
+          "glue:GetTables"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
