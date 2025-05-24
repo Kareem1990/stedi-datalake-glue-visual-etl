@@ -1,3 +1,8 @@
-aws s3 cp customer.json s3://stedi-datalake-terraform/customer_landing/
-aws s3 cp accelerometer.json s3://stedi-datalake-terraform/accelerometer_landing/
-aws s3 cp step_trainer.json s3://stedi-datalake-terraform/step_trainer_landing/
+aws s3 cp customer/ s3://stedi-datalake-terraform/customer_landing/ --recursive --profile kareem-profile
+aws s3 cp accelerometer/ s3://stedi-datalake-terraform/accelerometer_landing/ --recursive --profile kareem-profile
+aws s3 cp step_trainer/ s3://stedi-datalake-terraform/step_trainer_landing/ --recursive --profile kareem-profile
+
+C:\Users\kimo_\Desktop\Udacity\Project 3\Project\nd027-Data-Engineering-Data-Lakes-AWS-Exercises\project\starter
+
+
+

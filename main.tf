@@ -1,13 +1,14 @@
+# Create S3 Bucket to hold STEDI data lake
 resource "aws_s3_bucket" "stedi_datalake" {
-  bucket = "stedi-datalake-terraform"
-  force_destroy = true
+  bucket         = "stedi-datalake-terraform"
+  force_destroy  = true
 
   tags = {
     Project = "STEDI"
   }
 }
 
-# إنشاء مجلدات داخل الباكت
+# Create folders inside the S3 bucket for different landing zones
 resource "aws_s3_object" "folders" {
   for_each = toset([
     "customer_landing/",
@@ -16,10 +17,10 @@ resource "aws_s3_object" "folders" {
   ])
   bucket  = aws_s3_bucket.stedi_datalake.id
   key     = each.value
-  content = ""
+  content = ""  # Creates empty folder by uploading an empty object with "/" suffix
 }
 
-# IAM Role لـ AWS Glue
+# Create IAM Role for AWS Glue with trust policy allowing Glue to assume it
 resource "aws_iam_role" "glue_role" {
   name = "stedi-glue-role"
 
@@ -35,36 +36,32 @@ resource "aws_iam_role" "glue_role" {
   })
 }
 
-# Attach policies to allow Glue to access S3
+# Attach AmazonS3FullAccess policy to Glue role for full access to S3
 resource "aws_iam_role_policy_attachment" "glue_s3_access" {
   role       = aws_iam_role.glue_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+# Attach AWSGlueServiceRole policy to allow Glue basic permissions
 resource "aws_iam_role_policy_attachment" "glue_basic" {
   role       = aws_iam_role.glue_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
-# Glue Database
+# Create a Glue database to organize tables
 resource "aws_glue_catalog_database" "stedi_db" {
   name = "stedi_lake"
 }
 
-
-#########################################
-#         IAM Policy for voclabs Role   #
-#########################################
-
-resource "aws_glue_catalog_policy" "allow_voclabs_glue_access" {
+# Custom policy to allow reading from the Glue Data Catalog
+resource "aws_iam_policy" "glue_catalog_access" {
+  name        = "GlueCatalogReadAccess"
+  description = "Allow read access to AWS Glue Data Catalog"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
         Effect = "Allow",
-        Principal = {
-          AWS = "arn:aws:iam::446509598474:role/voclabs"
-        },
         Action = [
           "glue:GetDatabase",
           "glue:GetDatabases",
@@ -75,4 +72,17 @@ resource "aws_glue_catalog_policy" "allow_voclabs_glue_access" {
       }
     ]
   })
+}
+
+# Attach the custom Glue Data Catalog policy to the correct IAM role
+resource "aws_iam_policy_attachment" "voclabs_glue_catalog_attach" {
+  name       = "attach-voclabs-glue-access"
+  roles      = [aws_iam_role.glue_role.name]  # ✅ Corrected to use the actual role created
+  policy_arn = aws_iam_policy.glue_catalog_access.arn
+
+  # 👇 Make sure this attachment waits for both the role and the policy to exist first
+  depends_on = [
+    aws_iam_role.glue_role,
+    aws_iam_policy.glue_catalog_access
+  ]
 }
