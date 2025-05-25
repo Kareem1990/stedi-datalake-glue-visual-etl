@@ -56,7 +56,7 @@ resource "aws_glue_catalog_database" "stedi_db" {
 # Custom policy to allow reading from the Glue Data Catalog
 resource "aws_iam_policy" "glue_catalog_access" {
   name        = "GlueCatalogReadAccess"
-  description = "Allow read access to AWS Glue Data Catalog"
+  description = "Allow read access to AWS Glue Data Catalog and required S3 access for preview"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -66,13 +66,33 @@ resource "aws_iam_policy" "glue_catalog_access" {
           "glue:GetDatabase",
           "glue:GetDatabases",
           "glue:GetTable",
-          "glue:GetTables"
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
         ],
         Resource = "*"
       }
     ]
   })
 }
+# Create an IAM policy attachment to allow Glue to access the Data Catalog 
 
 # Attach the custom Glue Data Catalog policy to the correct IAM role
 resource "aws_iam_policy_attachment" "voclabs_glue_catalog_attach" {
