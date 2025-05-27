@@ -13,7 +13,6 @@ Originally, the ETL pipeline was built entirely using **AWS Glue Studio Visual J
 The following core infrastructure was provisioned using Terraform:
 
 * **S3 Bucket**: `stedi-datalake-terraform` with subfolders:
-
   * `customer_landing/`
   * `accelerometer_landing/`
   * `step_trainer_landing/`
@@ -44,9 +43,10 @@ The data is organized into three S3 folders:
 
 ### Sample Athena Row Count Checks:
 
-![customer\_landing](./customer_landing.png)
-![accelerometer\_landing](./accelerometer_landing.png)
-![step\_trainer\_landing](./step_trainer_landing.png)
+![customer_landing](./screenshots/Athena%20SQL/customer_landing.png)
+![accelerometer_landing](./screenshots/Athena%20SQL/accelerometer_landing.png)
+
+*The process is similar for the other tables.*
 
 ---
 
@@ -56,60 +56,54 @@ This project follows a **Landing → Trusted → Curated** architecture:
 
 ### 1. **Landing Zone**
 
-Raw data stored in JSON format is registered in the Glue Data Catalog using Athena DDL scripts:
+Raw data is registered in the Glue Data Catalog using Athena DDL scripts.
 
-* `customer_landing`
-* `accelerometer_landing`
-* `step_trainer_landing`
+*Example scripts:*
+- [`customer_landing.sql`](./screenshots/Athena%20SQL/customer_landing.sql)
+- [`accelerometer_landing.sql`](./screenshots/Athena%20SQL/accelerometer_landing.sql)
+- [`step_trainer_landing.sql`](./screenshots/Athena%20SQL/step_trainer_landing.sql)
 
-📄 Scripts:
+📸 **Example Screenshot:**
+![customer_landing_crawler_config](./screenshots/Crawlers/stedi_customer_landing_crawler_config.png)
 
-* `customer_landing.sql`
-* `accelerometer_landing.sql`
-* `step_trainer_landing.sql`
+*Other landing tables and crawlers follow the same pattern.*
 
-📸 Supporting Screenshots:
-![accelerometer\_landing\_crawler](./accelerometer_landing_crawler.png)
-![stedi\_accelerometer\_landing\_catalog\_table](./stedi_accelerometer_landing_catalog_table.png)
+---
 
 ### 2. **Trusted Zone**
 
-ETL jobs filter or join raw data to form clean, trusted tables:
+ETL jobs filter or join raw data to form clean, trusted tables.
 
-* `customer_landing_to_trusted.py`: Filters users with consent only
-* `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customers
-* `step_trainer_trusted.py`: Moves raw step trainer data to trusted layer
+*Example jobs:*
+- [`customer_landing_to_trusted.py`](./screenshots/python/customer_landing_to_trusted.py)
+- [`accelerometer_landing_to_trusted.py`](./screenshots/python/accelerometer_landing_to_trusted.py)
+- [`step_trainer_trusted.py`](./screenshots/python/step_trainer_trusted.py)
 
-📸 Sample Outputs:
-![customer\_trusted](./customer_trusted.png)
-![accelerometer\_trusted](./accelerometer_trusted.png)
-![step\_trainer\_trusted](./step_trainer_trusted.png)
+📸 **Example Output:**
+![customer_trusted](./screenshots/General/customer_trusted.png)
 
-📸 EDR + Glue Visual Canvas:
-![accelerometer\_change\_schema\_node](./accelerometer_change_schema_node.png)
-![accelerometer\_trusted\_output\_settings](./accelerometer_trusted_output_settings.png)
-![accelerometer\_landing\_etl\_job\_canvas](./accelerometer_landing_etl_job_canvas.png)
-![accelerometer\_trusted\_s3\_folder](./accelerometer_trusted_s3_folder.png)
+📸 **Glue Visual Job Example:**
+![accelerometer_trusted_job](./screenshots/General/accelerometer_trusted.png)
+
+*Other trusted jobs and outputs are similar.*
 
 ---
 
 ### 3. **Curated Zone**
 
-Final join and transformation steps to produce a machine-learning-ready dataset:
+Final join and transformation steps to produce a machine-learning-ready dataset.
 
-* `customer_trusted_to_curated.py`: Joins trusted customers with step trainer data by serialNumber
-* `machine_learning_curated.py`: Joins trusted step trainer + accelerometer data using timestamp
+*Example jobs:*
+- [`customer_trusted_to_curated.py`](./screenshots/python/customer_trusted_to_curated.py)
+- [`machine_learning_curated.py`](./screenshots/python/machine_learning_curated.py)
 
-📸 Final Output Preview:
-![customer\_curated](./customer_curated.png)
-![machine\_learning\_curated](./machine_learning_curated.png)
+📸 **Example Output:**
+![machine_learning_curated](./screenshots/General/machine_learning_curated.png)
 
-📸 EDR Proof for ML Output:
-![ml\_curated\_schema\_mapping](./ml_curated_schema_mapping.png)
-![trusted\_tables\_join\_to\_curated\_canvas](./trusted_tables_join_to_curated_canvas.png)
-![ml\_curated\_output\_s3\_settings](./ml_curated_output_s3_settings.png)
-![ml\_curated\_output\_s3\_folder](./ml_curated_output_s3_folder.png)
-![ml\_curated\_output\_s3\_folder\_2](./ml_curated_output_s3_folder_2.png)
+📸 **S3 Output Example:**
+![ml_curated_output_s3_folder_2](./screenshots/General/ml_curated_output_s3_folder_2.png)
+
+*Other curated outputs and Glue jobs follow the same approach.*
 
 ---
 
@@ -155,9 +149,9 @@ Recommended order to run jobs:
 4. `step_trainer_trusted`
 5. `machine_learning_curated`
 
-📸 Auto-generated Script Snapshots:
-![step\_trainer\_trusted.py](./step_trainer_trusted.py.png)
-![machine\_learning\_curated.py](./machine_learning_curated.py.png)
+📸 **Auto-generated Script Snapshots:**
+![step_trainer_trusted.py](./screenshots/python/step_trainer_trusted.py)
+![machine_learning_curated.py](./screenshots/python/machine_learning_curated.py)
 
 ---
 
@@ -165,7 +159,7 @@ Recommended order to run jobs:
 
 The `machine_learning_curated` table contains:
 
-* \~43,681 validated rows
+* ~43,681 validated rows
 * Accurate sensor join via timestamp alignment
 * ML-ready format
 
