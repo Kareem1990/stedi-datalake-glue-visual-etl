@@ -59,12 +59,10 @@ Raw data stored in JSON format is registered in the Glue Data Catalog using Athe
 ![accelerometer_landing_crawler](screenshots/accelerometer_landing_crawler.png)  
 ![stedi_accelerometer_landing_catalog_table](screenshots/stedi_accelerometer_landing_catalog_table.png)
 
----
-
 ### 2. **Trusted Zone**
 ETL jobs filter or join raw data to form clean, trusted tables:
-- `customer_landing_to_trusted.py`: Filters users with consent only  
-- `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customers  
+- `customer_landing_to_trusted.py`: Filters users with consent only
+- `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customers
 - `step_trainer_trusted.py`: Moves raw step trainer data to trusted layer
 
 📸 Sample Outputs:
@@ -82,7 +80,7 @@ ETL jobs filter or join raw data to form clean, trusted tables:
 
 ### 3. **Curated Zone**
 Final join and transformation steps to produce a machine-learning-ready dataset:
-- `customer_trusted_to_curated.py`: Joins trusted customers with step trainer data by serialNumber  
+- `customer_trusted_to_curated.py`: Joins trusted customers with step trainer data by serialNumber
 - `machine_learning_curated.py`: Joins trusted step trainer + accelerometer data using timestamp
 
 📸 Final Output Preview:
@@ -99,12 +97,12 @@ Final join and transformation steps to produce a machine-learning-ready dataset:
 ---
 
 ## 🧪 Tools & Tech Stack
-- **Terraform**: Infrastructure provisioning  
-- **AWS Glue Studio**: Visual ETL design  
-- **AWS S3**: Landing and output storage  
-- **AWS Athena**: SQL validation & schema creation  
-- **AWS Glue Data Catalog**: Table registration  
-- **PySpark (auto-generated)**: Underlying job logic  
+- **Terraform**: Infrastructure provisioning
+- **AWS Glue Studio**: Visual ETL design
+- **AWS S3**: Landing and output storage
+- **AWS Athena**: SQL validation & schema creation
+- **AWS Glue Data Catalog**: Table registration
+- **PySpark (auto-generated)**: Underlying job logic
 - **SQL**: For schema creation and data validation
 
 ---
@@ -127,11 +125,11 @@ Run each of the SQL scripts to register the landing zone tables:
 ### 3. Create Glue Visual Jobs:
 Use Glue Studio to create jobs from visual mode and attach each `.py` script if needed for editing/debugging.
 
-**Recommended order to run jobs:**
-1. `customer_landing_to_trusted`  
-2. `accelerometer_landing_to_trusted`  
-3. `customer_trusted_to_curated`  
-4. `step_trainer_trusted`  
+Recommended order to run jobs:
+1. `customer_landing_to_trusted`
+2. `accelerometer_landing_to_trusted`
+3. `customer_trusted_to_curated`
+4. `step_trainer_trusted`
 5. `machine_learning_curated`
 
 📸 Auto-generated Script Snapshots:
@@ -142,9 +140,9 @@ Use Glue Studio to create jobs from visual mode and attach each `.py` script if 
 
 ## ✅ Final Outcome
 The `machine_learning_curated` table contains:
-- ~43,681 validated rows  
-- Accurate sensor join via timestamp alignment  
-- ML-ready format  
+- ~43,681 validated rows
+- Accurate sensor join via timestamp alignment
+- ML-ready format
 
 You can now query this table in Athena or export to SageMaker for modeling.
 
