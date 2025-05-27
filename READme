@@ -1,149 +1,178 @@
-# STEDI Human Balance Analytics - Data Lakehouse Project
+# STEDI Human Balance Analytics - Glue Studio ETL Project
+
+## 🧠 Project Overview
 
 This project is part of the Udacity Data Engineering Nanodegree. It simulates a real-world scenario for building a data lakehouse architecture on AWS to process human balance data collected from mobile devices and IoT sensors. The goal is to curate clean, trusted, and machine-learning-ready data for analytics and predictive modeling.
 
+Originally, the ETL pipeline was built entirely using **AWS Glue Studio Visual Jobs**, which auto-generated PySpark code. However, this project also demonstrates **partial infrastructure-as-code (IaC)** using **Terraform**.
+
 ---
 
-## 🧠 Project Objective
+## 📦 Infrastructure Notes (Terraform Setup)
 
-To ingest, transform, and curate sensor and user data related to human balance using AWS-native tools. The curated data is intended for use in training machine learning models that can assess a user’s balance stability and detect anomalies in sensor readings.
+The following core infrastructure was provisioned using Terraform:
+
+* **S3 Bucket**: `stedi-datalake-terraform` with subfolders:
+
+  * `customer_landing/`
+  * `accelerometer_landing/`
+  * `step_trainer_landing/`
+* **AWS Glue Database**: `stedi_lake`
+* **IAM Roles and Policies**: For Glue access
+
+🔧 To provision the infrastructure:
+
+```bash
+terraform apply
+```
+
+Once your ETL pipeline is complete, clean up with:
+
+```bash
+terraform destroy
+```
 
 ---
 
 ## 📊 Data Sources
 
-The data is split into three **landing zone datasets** stored in S3:
+The data is organized into three S3 folders:
 
-- `customer_landing/`: Personal and consent information about users.
-- `accelerometer_landing/`: Time-series data from accelerometer sensors.
-- `step_trainer_landing/`: Step trainer device readings with timestamps.
+* `customer_landing/`: User consent and profile info
+* `accelerometer_landing/`: Accelerometer readings
+* `step_trainer_landing/`: Step trainer timestamps and distances
 
----
+### Sample Athena Row Count Checks:
 
-## 🔁 Data Pipeline Architecture
-
-This project follows a **three-zone data lake architecture**:
-
-### 1. Landing Zone
-Raw JSON files from S3 are registered as external tables using SQL DDL scripts. These are defined manually using Athena:
-
-- `customer_landing`
-- `accelerometer_landing`
-- `step_trainer_landing`
-
-📄 Files:
-- `customer_landing.sql`
-- `accelerometer_landing.sql`
-- `step_trainer_landing.sql`
+![customer\_landing](./customer_landing.png)
+![accelerometer\_landing](./accelerometer_landing.png)
+![step\_trainer\_landing](./step_trainer_landing.png)
 
 ---
 
-### 2. Trusted Zone
-Each dataset is cleaned and transformed to remove untrusted or irrelevant records using AWS Glue Studio Visual Jobs:
+## 🔁 Data Pipeline Zones
 
-- `customer_landing_to_trusted.py`: Filters out customers who didn’t give research consent.
-- `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customer records.
-- `step_trainer_landing_to_trusted.py`: Promotes raw step trainer data to trusted zone.
+This project follows a **Landing → Trusted → Curated** architecture:
 
-📄 Files:
-- `customer_landing_to_trusted.py`
-- `accelerometer_landing_to_trusted.py`
-- `step_trainer_trusted.py`
+### 1. **Landing Zone**
 
----
+Raw data stored in JSON format is registered in the Glue Data Catalog using Athena DDL scripts:
 
-### 3. Curated Zone
-The trusted datasets are joined to form a machine learning–ready dataset:
+* `customer_landing`
+* `accelerometer_landing`
+* `step_trainer_landing`
 
-- `customer_trusted_to_curated.py`: Joins step trainer data with trusted customers by `serialNumber`.
-- `machine_learning_curated.py`: Joins `step_trainer_trusted` with `accelerometer_trusted` on `sensorreadingtime = timestamp`.
+📄 Scripts:
 
-📄 Files:
-- `customer_trusted_to_curated.py`
-- `machine_learning_curated.py`
+* `customer_landing.sql`
+* `accelerometer_landing.sql`
+* `step_trainer_landing.sql`
 
-The final curated dataset contains over **43,000 rows** of clean sensor data ready for training machine learning models.
+📸 Supporting Screenshots:
+![accelerometer\_landing\_crawler](./accelerometer_landing_crawler.png)
+![stedi\_accelerometer\_landing\_catalog\_table](./stedi_accelerometer_landing_catalog_table.png)
 
----
+### 2. **Trusted Zone**
 
-## 🧪 Technologies & Tools Used
+ETL jobs filter or join raw data to form clean, trusted tables:
 
-This project involved a combination of infrastructure automation, AWS services, visual ETL tools, and programming/scripting:
+* `customer_landing_to_trusted.py`: Filters users with consent only
+* `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customers
+* `step_trainer_trusted.py`: Moves raw step trainer data to trusted layer
 
-### 🛠️ Infrastructure & Orchestration
-- **Terraform**: Provisioned S3 buckets, IAM roles, and Glue resources programmatically
-- **AWS CLI**: Used to upload landing datasets to S3 and manage resources via command line
+📸 Sample Outputs:
+![customer\_trusted](./customer_trusted.png)
+![accelerometer\_trusted](./accelerometer_trusted.png)
+![step\_trainer\_trusted](./step_trainer_trusted.png)
 
-### ☁️ AWS Services
-- **Amazon S3**: Data lake storage (landing, trusted, curated zones)
-- **AWS Glue Studio**: Visual ETL jobs using PySpark (SQL & transformations)
-- **AWS Glue Data Catalog**: Schema definitions and metadata management
-- **AWS Glue Jobs**: Auto-generated PySpark ETL scripts with configurable steps
-- **AWS Athena**: SQL query engine used for validation and DDL operations
-
-### 🐍 Programming & Query Languages
-- **SQL**: For schema creation, filtering, and joins (Athena & Glue Studio)
-- **Python (PySpark)**: Auto-generated by Glue Studio (included in `.py` Glue Job scripts)
-- **JSON**: Input format for all landing zone data
-
-### 🧰 Developer Tools
-- **Visual Studio Code**: Local editing and organization of `.sql` and `.py` scripts
-- **Markdown**: For documentation and project notes (`README.md`)
+📸 EDR + Glue Visual Canvas:
+![accelerometer\_change\_schema\_node](./accelerometer_change_schema_node.png)
+![accelerometer\_trusted\_output\_settings](./accelerometer_trusted_output_settings.png)
+![accelerometer\_landing\_etl\_job\_canvas](./accelerometer_landing_etl_job_canvas.png)
+![accelerometer\_trusted\_s3\_folder](./accelerometer_trusted_s3_folder.png)
 
 ---
 
-## 📷 Screenshots Included
+### 3. **Curated Zone**
 
-| Screenshot File | Description |
-|-----------------|-------------|
-| `customer_landing.png` | Row count from Athena |
-| `accelerometer_landing.png` | Row count from Athena |
-| `step_trainer_landing.png` | Row count from Athena |
-| `customer_trusted.png` | Filtered trusted customers |
-| `accelerometer_trusted.png` | Joined accelerometer data |
-| `step_trainer_trusted.png` | Step trainer records |
-| `customers_curated.png` | Joined customer + device data |
-| `machine_learning_curated.png` | Final dataset used for ML |
+Final join and transformation steps to produce a machine-learning-ready dataset:
+
+* `customer_trusted_to_curated.py`: Joins trusted customers with step trainer data by serialNumber
+* `machine_learning_curated.py`: Joins trusted step trainer + accelerometer data using timestamp
+
+📸 Final Output Preview:
+![customer\_curated](./customer_curated.png)
+![machine\_learning\_curated](./machine_learning_curated.png)
+
+📸 EDR Proof for ML Output:
+![ml\_curated\_schema\_mapping](./ml_curated_schema_mapping.png)
+![trusted\_tables\_join\_to\_curated\_canvas](./trusted_tables_join_to_curated_canvas.png)
+![ml\_curated\_output\_s3\_settings](./ml_curated_output_s3_settings.png)
+![ml\_curated\_output\_s3\_folder](./ml_curated_output_s3_folder.png)
+![ml\_curated\_output\_s3\_folder\_2](./ml_curated_output_s3_folder_2.png)
 
 ---
 
-## 📁 Files Delivered
+## 🧪 Tools & Tech Stack
 
-### SQL DDL Scripts
-- `customer_landing.sql`
-- `accelerometer_landing.sql`
-- `step_trainer_landing.sql`
+* **Terraform**: Infrastructure provisioning
+* **AWS Glue Studio**: Visual ETL design
+* **AWS S3**: Landing and output storage
+* **AWS Athena**: SQL validation & schema creation
+* **AWS Glue Data Catalog**: Table registration
+* **PySpark (auto-generated)**: Underlying job logic
+* **SQL**: For schema creation and data validation
 
-### Glue Job Scripts
-- `customer_landing_to_trusted.py`
-- `accelerometer_landing_to_trusted.py`
-- `step_trainer_trusted.py`
-- `customer_trusted_to_curated.py`
-- `machine_learning_curated.py`
+---
 
-### Athena Query Results (Screenshots)
-- `*.png` screenshots for row count validation
+## 🧰 How to Use
+
+### 1. Upload the data to your own S3 bucket:
+
+```bash
+aws s3 cp customer/ s3://your-bucket/customer_landing/ --recursive --profile your-profile
+aws s3 cp accelerometer/ s3://your-bucket/accelerometer_landing/ --recursive --profile your-profile
+aws s3 cp step_trainer/ s3://your-bucket/step_trainer_landing/ --recursive --profile your-profile
+```
+
+### 2. Register the Landing Zone tables using Athena (or Console):
+
+Run each of the SQL scripts to register the landing zone tables:
+
+* `customer_landing.sql`
+* `accelerometer_landing.sql`
+* `step_trainer_landing.sql`
+
+### 3. Create Glue Visual Jobs:
+
+Use Glue Studio to create jobs from visual mode and attach each `.py` script if needed for editing/debugging.
+
+Recommended order to run jobs:
+
+1. `customer_landing_to_trusted`
+2. `accelerometer_landing_to_trusted`
+3. `customer_trusted_to_curated`
+4. `step_trainer_trusted`
+5. `machine_learning_curated`
+
+📸 Auto-generated Script Snapshots:
+![step\_trainer\_trusted.py](./step_trainer_trusted.py.png)
+![machine\_learning\_curated.py](./machine_learning_curated.py.png)
 
 ---
 
 ## ✅ Final Outcome
 
-The final `machine_learning_curated` table contains:
-- ✅ ~43,681 clean records (after fixing row explosion caused by timestamp duplications)
-- Ready for ML model ingestion and performance analytics
+The `machine_learning_curated` table contains:
+
+* \~43,681 validated rows
+* Accurate sensor join via timestamp alignment
+* ML-ready format
+
+You can now query this table in Athena or export to SageMaker for modeling.
 
 ---
 
 ## 🙌 Acknowledgments
 
-Thanks to Udacity for the challenging and realistic capstone, and to AWS for providing the tools and infrastructure that made building a production-grade data pipeline achievable.
-
-<!-- 
-aws s3 cp customer/ s3://stedi-datalake-terraform/customer_landing/ --recursive --profile kareem-profile
-aws s3 cp accelerometer/ s3://stedi-datalake-terraform/accelerometer_landing/ --recursive --profile kareem-profile
-aws s3 cp step_trainer/ s3://stedi-datalake-terraform/step_trainer_landing/ --recursive --profile kareem-profile
-
-C:\Users\kimo_\Desktop\Udacity\Project 3\Project\nd027-Data-Engineering-Data-Lakes-AWS-Exercises\project\starter
- -->
-
-
+Thanks to Udacity for the challenging scenario and AWS Glue Studio for making visual ETL fast and accessible.
