@@ -19,13 +19,13 @@ The following core infrastructure was provisioned using Terraform:
 * **AWS Glue Database**: `stedi_lake`
 * **IAM Roles and Policies**: For Glue access
 
-🔧 To provision the infrastructure:
+**Provision infrastructure:**
 
 ```bash
 terraform apply
 ```
 
-Once your ETL pipeline is complete, clean up with:
+**Clean up:**
 
 ```bash
 terraform destroy
@@ -41,67 +41,74 @@ The data is organized into three S3 folders:
 * `accelerometer_landing/`: Accelerometer readings
 * `step_trainer_landing/`: Step trainer timestamps and distances
 
-### Sample Athena Row Count Checks:
+**Sample Athena Row Count Checks:**
 
-![customer_landing](./screenshots/Athena%20SQL/customer_landing.png)
-![accelerometer_landing](./screenshots/Athena%20SQL/accelerometer_landing.png)
+![Customer Landing Athena Query](screenshots/Athena%20SQL/customer_landing.png)  
+![Accelerometer Landing Athena Query](screenshots/Athena%20SQL/accelerometer_landing.png)
 
-*The process is similar for the other tables.*
+*Other tables follow the same process.*
 
 ---
 
 ## 🔁 Data Pipeline Zones
 
-This project follows a **Landing → Trusted → Curated** architecture:
+This project follows a **Landing → Trusted → Curated** architecture.
 
-### 1. **Landing Zone**
+### 1. Landing Zone
 
 Raw data is registered in the Glue Data Catalog using Athena DDL scripts.
 
-*Example scripts:*
-- [`customer_landing.sql`](./screenshots/Athena%20SQL/customer_landing.sql)
-- [`accelerometer_landing.sql`](./screenshots/Athena%20SQL/accelerometer_landing.sql)
-- [`step_trainer_landing.sql`](./screenshots/Athena%20SQL/step_trainer_landing.sql)
+**Example Athena DDL:**
 
-📸 **Example Screenshot:**
-![customer_landing_crawler_config](./screenshots/Crawlers/stedi_customer_landing_crawler_config.png)
+```sql
+-- Example: customer_landing.sql
+CREATE EXTERNAL TABLE stedi_lake.customer_landing (
+  ...
+)
+LOCATION 's3://your-bucket/customer_landing/';
+```
+
+![Customer Landing Crawler Config](screenshots/Crawlers/stedi_customer_landing_crawler_config.png)
 
 *Other landing tables and crawlers follow the same pattern.*
 
 ---
 
-### 2. **Trusted Zone**
+### 2. Trusted Zone
 
 ETL jobs filter or join raw data to form clean, trusted tables.
 
-*Example jobs:*
-- [`customer_landing_to_trusted.py`](./screenshots/python/customer_landing_to_trusted.py)
-- [`accelerometer_landing_to_trusted.py`](./screenshots/python/accelerometer_landing_to_trusted.py)
-- [`step_trainer_trusted.py`](./screenshots/python/step_trainer_trusted.py)
+**Example Glue Job Script:**
 
-📸 **Example Output:**
-![customer_trusted](./screenshots/General/customer_trusted.png)
+```python
+# customer_landing_to_trusted.py
+import sys
+from awsglue.transforms import *
+...
+```
 
-📸 **Glue Visual Job Example:**
-![accelerometer_trusted_job](./screenshots/General/accelerometer_trusted.png)
+![Customer Trusted Table](screenshots/General/customer_trusted.png)  
+![Accelerometer Trusted Table](screenshots/General/accelerometer_trusted.png)
 
 *Other trusted jobs and outputs are similar.*
 
 ---
 
-### 3. **Curated Zone**
+### 3. Curated Zone
 
 Final join and transformation steps to produce a machine-learning-ready dataset.
 
-*Example jobs:*
-- [`customer_trusted_to_curated.py`](./screenshots/python/customer_trusted_to_curated.py)
-- [`machine_learning_curated.py`](./screenshots/python/machine_learning_curated.py)
+**Example Glue Job Script:**
 
-📸 **Example Output:**
-![machine_learning_curated](./screenshots/General/machine_learning_curated.png)
+```python
+# machine_learning_curated.py
+import sys
+from awsglue.transforms import *
+...
+```
 
-📸 **S3 Output Example:**
-![ml_curated_output_s3_folder_2](./screenshots/General/ml_curated_output_s3_folder_2.png)
+![Machine Learning Curated Table](screenshots/General/machine_learning_curated.png)  
+![Curated S3 Output](screenshots/General/ml_curated_output_s3_folder_2.png)
 
 *Other curated outputs and Glue jobs follow the same approach.*
 
@@ -121,7 +128,7 @@ Final join and transformation steps to produce a machine-learning-ready dataset.
 
 ## 🧰 How to Use
 
-### 1. Upload the data to your own S3 bucket:
+### 1. Upload the data to your own S3 bucket
 
 ```bash
 aws s3 cp customer/ s3://your-bucket/customer_landing/ --recursive --profile your-profile
@@ -129,7 +136,7 @@ aws s3 cp accelerometer/ s3://your-bucket/accelerometer_landing/ --recursive --p
 aws s3 cp step_trainer/ s3://your-bucket/step_trainer_landing/ --recursive --profile your-profile
 ```
 
-### 2. Register the Landing Zone tables using Athena (or Console):
+### 2. Register the Landing Zone tables using Athena (or Console)
 
 Run each of the SQL scripts to register the landing zone tables:
 
@@ -137,11 +144,11 @@ Run each of the SQL scripts to register the landing zone tables:
 * `accelerometer_landing.sql`
 * `step_trainer_landing.sql`
 
-### 3. Create Glue Visual Jobs:
+### 3. Create Glue Visual Jobs
 
 Use Glue Studio to create jobs from visual mode and attach each `.py` script if needed for editing/debugging.
 
-Recommended order to run jobs:
+**Recommended order to run jobs:**
 
 1. `customer_landing_to_trusted`
 2. `accelerometer_landing_to_trusted`
@@ -149,9 +156,10 @@ Recommended order to run jobs:
 4. `step_trainer_trusted`
 5. `machine_learning_curated`
 
-📸 **Auto-generated Script Snapshots:**
-![step_trainer_trusted.py](./screenshots/python/step_trainer_trusted.py)
-![machine_learning_curated.py](./screenshots/python/machine_learning_curated.py)
+**Auto-generated Script Snapshots:**
+
+![Step Trainer Trusted Script](screenshots/python/step_trainer_trusted.py)  
+![Machine Learning Curated Script](screenshots/python/machine_learning_curated.py)
 
 ---
 
