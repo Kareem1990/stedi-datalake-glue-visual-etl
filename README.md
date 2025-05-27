@@ -1,13 +1,38 @@
 # STEDI Human Balance Analytics - Glue Studio ETL Project
 
 ## 🧠 Project Overview
+
 This project is part of the Udacity Data Engineering Nanodegree. It simulates a real-world scenario for building a data lakehouse architecture on AWS to process human balance data collected from mobile devices and IoT sensors. The goal is to curate clean, trusted, and machine-learning-ready data for analytics and predictive modeling.
 
-Originally, the ETL pipeline was built entirely using **AWS Glue Studio Visual Jobs**, which auto-generated PySpark code. However, this project also demonstrates **partial infrastructure-as-code (IaC)** using **Terraform**.
+Originally, the ETL pipeline was built entirely using **AWS Glue Studio Visual Jobs**, which auto-generated PySpark code. However, this project also demonstrates **partial infrastructure-as-code (IaC)** using **Terraform** for setting up core infrastructure such as the S3 bucket and Glue database.
+
+---
+
+## ⚠️ Prerequisites & Budget Considerations
+
+Before proceeding, ensure the following:
+
+- ✅ You have configured your AWS **access keys** inside `terraform.tfvars`:
+
+```bash
+aws_access_key = "YOUR_ACCESS_KEY"
+aws_secret_key = "YOUR_SECRET_KEY"
+```
+
+- 🧾 AWS services used in this project may incur charges, especially:
+  - Athena queries (~$5 per TB scanned)
+  - Glue jobs
+  - S3 storage
+
+💡 **Tips to minimize budget**:
+- Delete all provisioned resources with `terraform destroy` after testing
+- Keep datasets small
+- Use Athena sparingly and filter early
 
 ---
 
 ## 📦 Infrastructure Notes (Terraform Setup)
+
 The following core infrastructure was provisioned using Terraform:
 
 - **S3 Bucket**: `stedi-datalake-terraform` with subfolders:
@@ -15,13 +40,17 @@ The following core infrastructure was provisioned using Terraform:
   - `accelerometer_landing/`
   - `step_trainer_landing/`
 - **AWS Glue Database**: `stedi_lake`
-- **IAM Roles and Policies**: For Glue access
+- **IAM Roles and Policies**: For Glue jobs
 
-🔧 To provision the infrastructure:
+📦 To deploy infrastructure:
+
 ```bash
+terraform init
 terraform apply
 ```
-Once your ETL pipeline is complete, clean up with:
+
+To destroy and clean up:
+
 ```bash
 terraform destroy
 ```
@@ -29,65 +58,79 @@ terraform destroy
 ---
 
 ## 📊 Data Sources
+
 The data is organized into three S3 folders:
+
 - `customer_landing/`: User consent and profile info
 - `accelerometer_landing/`: Accelerometer readings
 - `step_trainer_landing/`: Step trainer timestamps and distances
 
-### Sample Athena Row Count Checks:
+📸 Sample Row Count Checks:
+
 ![customer_landing](screenshots/customer_landing.png)  
 ![accelerometer_landing](screenshots/accelerometer_landing.png)  
 ![step_trainer_landing](screenshots/step_trainer_landing.png)
 
 ---
 
-## 🔁 Data Pipeline Zones
-This project follows a **Landing → Trusted → Curated** architecture:
+## 🔁 Data Pipeline Architecture
 
-### 1. **Landing Zone**
-Raw data stored in JSON format is registered in the Glue Data Catalog using Athena DDL scripts:
-- `customer_landing`
-- `accelerometer_landing`
-- `step_trainer_landing`
+The pipeline follows a standard **Landing → Trusted → Curated** pattern:
 
-📄 Scripts:
+---
+
+### 1️⃣ Landing Zone
+
+Raw data is registered in the Glue Data Catalog via Athena SQL scripts:
+
 - `customer_landing.sql`
 - `accelerometer_landing.sql`
 - `step_trainer_landing.sql`
 
-📸 Supporting Screenshots:
+📸 Example crawler and table:
+
 ![accelerometer_landing_crawler](screenshots/accelerometer_landing_crawler.png)  
 ![stedi_accelerometer_landing_catalog_table](screenshots/stedi_accelerometer_landing_catalog_table.png)
 
-### 2. **Trusted Zone**
-ETL jobs filter or join raw data to form clean, trusted tables:
-- `customer_landing_to_trusted.py`: Filters users with consent only
-- `accelerometer_landing_to_trusted.py`: Joins accelerometer data with trusted customers
-- `step_trainer_trusted.py`: Moves raw step trainer data to trusted layer
+---
 
-📸 Sample Outputs:
+### 2️⃣ Trusted Zone
+
+Visual ETL jobs in Glue Studio filter or prepare the data:
+
+- `customer_landing_to_trusted.py`: Filters consented customers
+- `accelerometer_landing_to_trusted.py`: Joins with customers
+- `step_trainer_trusted.py`: Promotes step trainer data
+
+📸 Trusted zone outputs:
+
 ![customer_trusted](screenshots/customer_trusted.png)  
 ![accelerometer_trusted](screenshots/accelerometer_trusted.png)  
 ![step_trainer_trusted](screenshots/step_trainer_trusted.png)
 
-📸 EDR + Glue Visual Canvas:
+📸 Glue Visual ETL Canvas:
+
 ![accelerometer_change_schema_node](screenshots/accelerometer_change_schema_node.png)  
-![accelerometer_trusted_output_settings](screenshots/accelerometer_trusted_output_settings.png)  
 ![accelerometer_landing_etl_job_canvas](screenshots/accelerometer_landing_etl_job_canvas.png)  
+![accelerometer_trusted_output_settings](screenshots/accelerometer_trusted_output_settings.png)  
 ![accelerometer_trusted_s3_folder](screenshots/accelerometer_trusted_s3_folder.png)
 
 ---
 
-### 3. **Curated Zone**
-Final join and transformation steps to produce a machine-learning-ready dataset:
-- `customer_trusted_to_curated.py`: Joins trusted customers with step trainer data by serialNumber
-- `machine_learning_curated.py`: Joins trusted step trainer + accelerometer data using timestamp
+### 3️⃣ Curated Zone
 
-📸 Final Output Preview:
+Final jobs to prepare ML-ready data:
+
+- `customer_trusted_to_curated.py`: Joins customer + step trainer
+- `machine_learning_curated.py`: Joins result with accelerometer
+
+📸 Curated outputs:
+
 ![customer_curated](screenshots/customer_curated.png)  
 ![machine_learning_curated](screenshots/machine_learning_curated.png)
 
-📸 EDR Proof for ML Output:
+📸 Join logic & output folder:
+
 ![ml_curated_schema_mapping](screenshots/ml_curated_schema_mapping.png)  
 ![trusted_tables_join_to_curated_canvas](screenshots/trusted_tables_join_to_curated_canvas.png)  
 ![ml_curated_output_s3_settings](screenshots/ml_curated_output_s3_settings.png)  
@@ -96,57 +139,57 @@ Final join and transformation steps to produce a machine-learning-ready dataset:
 
 ---
 
-## 🧪 Tools & Tech Stack
-- **Terraform**: Infrastructure provisioning
-- **AWS Glue Studio**: Visual ETL design
-- **AWS S3**: Landing and output storage
-- **AWS Athena**: SQL validation & schema creation
-- **AWS Glue Data Catalog**: Table registration
-- **PySpark (auto-generated)**: Underlying job logic
-- **SQL**: For schema creation and data validation
-
----
-
 ## 🧰 How to Use
 
-### 1. Upload the data to your own S3 bucket:
+### Step 1: Upload the data
+
 ```bash
-aws s3 cp customer/ s3://your-bucket/customer_landing/ --recursive --profile your-profile
-aws s3 cp accelerometer/ s3://your-bucket/accelerometer_landing/ --recursive --profile your-profile
-aws s3 cp step_trainer/ s3://your-bucket/step_trainer_landing/ --recursive --profile your-profile
+aws s3 cp customer/ s3://your-bucket/customer_landing/ --recursive
+aws s3 cp accelerometer/ s3://your-bucket/accelerometer_landing/ --recursive
+aws s3 cp step_trainer/ s3://your-bucket/step_trainer_landing/ --recursive
 ```
 
-### 2. Register the Landing Zone tables using Athena (or Console):
-Run each of the SQL scripts to register the landing zone tables:
-- `customer_landing.sql`
-- `accelerometer_landing.sql`
-- `step_trainer_landing.sql`
+### Step 2: Register tables with Athena
 
-### 3. Create Glue Visual Jobs:
-Use Glue Studio to create jobs from visual mode and attach each `.py` script if needed for editing/debugging.
+Run SQL scripts:
+```sql
+-- Example: customer_landing.sql
+CREATE EXTERNAL TABLE stedi_lake.customer_landing (
+  ...
+)
+LOCATION 's3://your-bucket/customer_landing/';
+```
 
-Recommended order to run jobs:
+### Step 3: Create Visual Glue Jobs
+
+Create jobs in Glue Studio and map the auto-generated scripts:
+
 1. `customer_landing_to_trusted`
 2. `accelerometer_landing_to_trusted`
 3. `customer_trusted_to_curated`
 4. `step_trainer_trusted`
 5. `machine_learning_curated`
 
-📸 Auto-generated Script Snapshots:
+📸 Example Glue job scripts:
+
 ![step_trainer_trusted.py](screenshots/step_trainer_trusted.py.png)  
 ![machine_learning_curated.py](screenshots/machine_learning_curated.py.png)
 
 ---
 
 ## ✅ Final Outcome
-The `machine_learning_curated` table contains:
-- ~43,681 validated rows
-- Accurate sensor join via timestamp alignment
-- ML-ready format
 
-You can now query this table in Athena or export to SageMaker for modeling.
+The final curated table is:
+
+- ML-ready
+- Includes accurate timestamp joins
+- ~43,681 clean rows
+
+Use Athena to query or export to SageMaker.
 
 ---
 
 ## 🙌 Acknowledgments
-Thanks to Udacity for the challenging scenario and AWS Glue Studio for making visual ETL fast and accessible.
+
+Thanks to Udacity for the use case and AWS Glue Studio for its powerful visual ETL interface.
+
